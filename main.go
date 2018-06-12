@@ -18,6 +18,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	units "github.com/docker/go-units"
 	"github.com/genuinetools/releases/version"
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
@@ -206,6 +207,7 @@ type release struct {
 	BinarySHA256        string
 	BinaryMD5           string
 	BinaryDownloadCount int
+	BinarySince         string
 }
 
 func run(ctx context.Context, client *github.Client, affiliation string) (bytes.Buffer, error) {
@@ -301,6 +303,7 @@ func handleRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 		if strings.HasSuffix(asset.GetName(), arch) {
 			rl.BinaryURL = asset.GetBrowserDownloadURL()
 			rl.BinaryName = asset.GetName()
+			rl.BinarySince = units.HumanDuration(time.Since(asset.GetCreatedAt().Time))
 			continue
 		}
 		if strings.HasSuffix(asset.GetName(), arch+".sha256") {

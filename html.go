@@ -89,8 +89,8 @@ const (
 						<th>Release</th>
 						<th>download</th>
 						<th>sha256</th>
-						<th>md5</th>
 						<th>download count</th>
+						<th>released</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -100,8 +100,8 @@ const (
 						<td><a href="{{.Release.HTMLURL}}" target="_blank">{{.Release.TagName}}</a></td>
 						<td><a href="{{.BinaryURL}}" target="_blank"><code>{{.BinaryName}}</code></a></td>
 						<td><code>{{.BinarySHA256}}</code></td>
-						<td><code>{{.BinaryMD5}}</code></td>
 						<td><bold>{{.BinaryDownloadCount}}</bold></td>
+						<td>{{.BinarySince}}</td>
 					</tr>
 				{{end}}
 				</tbody>
