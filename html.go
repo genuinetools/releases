@@ -78,7 +78,7 @@ const (
 	<body>
 		<div class="container">
 			<h1>Latest Releases</h1>
-			<p>This only shows the hases and download links for linux amd64. For other archs click the tag
+			<p>This only shows the hashes and download links for linux amd64. For other archs click the tag
 			to view the release page.</p>
 			<p><small>If you wish to modify this page, the repo is: <a href="https://github.com/genuinetools/releases" target="_blank">genuinetools/releases</a></small></p>
 
