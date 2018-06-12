@@ -63,7 +63,7 @@ const (
 				border-bottom: 2px solid #dee2e6;
 			}
 			td, th {
-				padding: .75rem;
+				padding: .5rem;
 				vertical-align: top;
 				border-top: 1px solid #dee2e6;
 				display: table-cell;
