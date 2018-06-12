@@ -101,7 +101,7 @@ const (
 						<td><a href="{{.BinaryURL}}" target="_blank"><code>{{.BinaryName}}</code></a></td>
 						<td><code>{{.BinarySHA256}}</code></td>
 						<td><bold>{{.BinaryDownloadCount}}</bold></td>
-						<td>{{.BinarySince}}</td>
+						<td>{{.BinarySince}} ago</td>
 					</tr>
 				{{end}}
 				</tbody>
