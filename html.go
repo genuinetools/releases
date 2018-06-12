@@ -47,6 +47,7 @@ const (
 				border-spacing: 2px;
 				border-color: grey;
 				text-align: inherit;
+				font-size: .75rem;
 			}
 			thead {
 				display: table-header-group;
@@ -63,7 +64,7 @@ const (
 				border-bottom: 2px solid #dee2e6;
 			}
 			td, th {
-				padding: .5rem;
+				padding: .75rem;
 				vertical-align: top;
 				border-top: 1px solid #dee2e6;
 				display: table-cell;
@@ -84,15 +85,21 @@ const (
 					<tr>
 						<th>Project</th>
 						<th>Release</th>
-						<th>Link</th>
+						<th>download <small>(for other archs click the tag)</small></th>
+						<th>linux amd64 sha256</th>
+						<th>linux amd64 md5</th>
+						<th>download count</th>
 					</tr>
 				</thead>
 				<tbody>
 				{{range .}}
 					<tr>
-						<td>{{.Repository.FullName}}</td>
-						<td>{{.Release.TagName}}</td>
-						<td><a href="{{.Release.HTMLURL}}" target="_blank">{{.Repository.FullName}}/releases</a></td>
+						<td><a href="{{.Repository.HTMLURL}}" target="_blank">{{.Repository.FullName}}</a></td>
+						<td><a href="{{.Release.HTMLURL}}" target="_blank">{{.Release.TagName}}</a></td>
+						<td><a href="{{.BinaryURL}}" target="_blank"><code>{{.BinaryName}}</code></a></td>
+						<td><code>{{.BinarySHA256}}</code></td>
+						<td><code>{{.BinaryMD5}}</code></td>
+						<td><bold>{{.BinaryDownloadCount}}</bold></td>
 					</tr>
 				{{end}}
 				</tbody>

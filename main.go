@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -174,9 +176,11 @@ func main() {
 	}
 	go func() {
 		for range ticker.C {
-			b, err = run(ctx, client, affiliation)
+			bt, err := run(ctx, client, affiliation)
 			if err != nil {
-				logrus.Fatal(err)
+				logrus.Warn(err)
+			} else {
+				b = bt
 			}
 		}
 	}()
@@ -195,8 +199,13 @@ func main() {
 }
 
 type release struct {
-	Repository *github.Repository
-	Release    *github.RepositoryRelease
+	Repository          *github.Repository
+	Release             *github.RepositoryRelease
+	BinaryName          string
+	BinaryURL           string
+	BinarySHA256        string
+	BinaryMD5           string
+	BinaryDownloadCount int
 }
 
 func run(ctx context.Context, client *github.Client, affiliation string) (bytes.Buffer, error) {
@@ -281,10 +290,53 @@ func handleRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 		return nil, err
 	}
 
-	return &release{
+	rl := release{
 		Repository: repo,
 		Release:    r,
-	}, nil
+	}
+	// Get information about the binary assets for linux-amd64
+	arch := "linux-amd64"
+	for _, asset := range r.Assets {
+		rl.BinaryDownloadCount += asset.GetDownloadCount()
+		if strings.HasSuffix(asset.GetName(), arch) {
+			rl.BinaryURL = asset.GetBrowserDownloadURL()
+			rl.BinaryName = asset.GetName()
+			continue
+		}
+		if strings.HasSuffix(asset.GetName(), arch+".sha256") {
+			c, err := getURLContent(asset.GetBrowserDownloadURL())
+			if err != nil {
+				return nil, err
+			}
+			rl.BinarySHA256 = c
+			continue
+		}
+		if strings.HasSuffix(asset.GetName(), arch+".md5") {
+			c, err := getURLContent(asset.GetBrowserDownloadURL())
+			if err != nil {
+				return nil, err
+			}
+			rl.BinaryMD5 = c
+			continue
+		}
+	}
+
+	return &rl, nil
+}
+
+func getURLContent(uri string) (string, error) {
+	resp, err := http.Get(uri)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimRight(string(b), " "), nil
 }
 
 func in(a stringSlice, s string) bool {
