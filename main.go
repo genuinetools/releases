@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
+	"html/template"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -33,6 +37,9 @@ const (
 )
 
 var (
+	port     int
+	interval string
+
 	token  string
 	enturl string
 	orgs   stringSlice
@@ -57,6 +64,10 @@ func (s *stringSlice) Set(value string) error {
 
 func init() {
 	// parse flags
+	flag.IntVar(&port, "port", 8080, "port for the server to listen on")
+	flag.IntVar(&port, "p", 8080, "port for the server to listen on (shorthand)")
+	flag.StringVar(&interval, "interval", "1h", "interval on which to refetch release data")
+
 	flag.StringVar(&token, "token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
 	flag.StringVar(&enturl, "url", "", "GitHub Enterprise URL")
 	flag.Var(&orgs, "orgs", "organizations to include")
@@ -94,12 +105,15 @@ func init() {
 }
 
 func main() {
+	var ticker *time.Ticker
+
 	// On ^C, or SIGTERM handle exit.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
 	go func() {
 		for sig := range c {
+			ticker.Stop()
 			logrus.Infof("Received %s, exiting.", sig.String())
 			os.Exit(0)
 		}
@@ -144,22 +158,61 @@ func main() {
 		orgs = append(orgs, username)
 	}
 
+	// Parse the interval duration.
+	dur, err := time.ParseDuration(interval)
+	if err != nil {
+		logrus.Fatalf("parsing %s as duration failed: %v", interval, err)
+	}
+	ticker = time.NewTicker(dur)
+
 	var (
-		page     = 1
-		perPage  = 100
-		releases = []release{}
-		err      error
+		b bytes.Buffer
 	)
 
-	logrus.Debugf("Getting repositories...")
-	releases, err = getRepositories(ctx, client, page, perPage, affiliation, releases)
-	if err != nil {
-		if v, ok := err.(*github.RateLimitError); ok {
-			logrus.Fatalf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
-		}
+	go func() {
+		// Fetch new data and render the template every interval sequence.
+		for range ticker.C {
+			var (
+				page     = 1
+				perPage  = 100
+				releases = []release{}
+				err      error
+			)
 
-		logrus.Fatal(err)
-	}
+			logrus.Info("Getting repositories...")
+			releases, err = getRepositories(ctx, client, page, perPage, affiliation, releases)
+			if err != nil {
+				if v, ok := err.(*github.RateLimitError); ok {
+					logrus.Fatalf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
+				}
+
+				logrus.Fatal(err)
+			}
+
+			// Parse the template.
+			logrus.Info("Executing template...")
+			t := template.Must(template.New("").Parse(tmpl))
+			b.Reset()
+			w := io.Writer(&b)
+
+			// Execute the template.
+			if err := t.Execute(w, releases); err != nil {
+				logrus.Fatal(err)
+			}
+		}
+	}()
+
+	// Setup the server.
+	mux := http.NewServeMux()
+
+	// Define wildcard/root handler.
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, b.String())
+	})
+
+	logrus.Infof("Starting server on port %d...", port)
+	logrus.Fatal(http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), mux))
 }
 
 type release struct {
@@ -207,7 +260,15 @@ func handleRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 		return nil, nil
 	}
 
-	r, _, err := client.Repositories.GetLatestRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName())
+	r, resp, err := client.Repositories.GetLatestRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName())
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusForbidden || err != nil {
+		if _, ok := err.(*github.RateLimitError); ok {
+			return nil, err
+		}
+
+		// Skip it because there is no release.
+		return nil, nil
+	}
 	if err != nil || r == nil {
 		return nil, err
 	}
