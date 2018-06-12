@@ -278,8 +278,12 @@ func handleRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 		// return early
 		return nil, nil
 	}
+	opt := &github.ListOptions{
+		Page:    1,
+		PerPage: 100,
+	}
 
-	r, resp, err := client.Repositories.GetLatestRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName())
+	releases, resp, err := client.Repositories.ListReleases(ctx, repo.GetOwner().GetLogin(), repo.GetName(), opt)
 	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusForbidden || err != nil {
 		if _, ok := err.(*github.RateLimitError); ok {
 			return nil, err
@@ -288,39 +292,50 @@ func handleRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 		// Skip it because there is no release.
 		return nil, nil
 	}
-	if err != nil || r == nil {
+	if err != nil || len(releases) < 1 {
 		return nil, err
 	}
 
 	rl := release{
 		Repository: repo,
-		Release:    r,
 	}
 	// Get information about the binary assets for linux-amd64
 	arch := "linux-amd64"
-	for _, asset := range r.Assets {
-		rl.BinaryDownloadCount += asset.GetDownloadCount()
-		if strings.HasSuffix(asset.GetName(), arch) {
-			rl.BinaryURL = asset.GetBrowserDownloadURL()
-			rl.BinaryName = asset.GetName()
-			rl.BinarySince = units.HumanDuration(time.Since(asset.GetCreatedAt().Time))
-			continue
-		}
-		if strings.HasSuffix(asset.GetName(), arch+".sha256") {
-			c, err := getURLContent(asset.GetBrowserDownloadURL())
-			if err != nil {
-				return nil, err
+	for i := 0; i < len(releases); i++ {
+		r := releases[i]
+		if rl.Release == nil && !r.GetDraft() {
+			// If this is the latest release and it's not a draft make it the one
+			// to return
+			rl.Release = r
+			for _, asset := range r.Assets {
+				rl.BinaryDownloadCount += asset.GetDownloadCount()
+				if strings.HasSuffix(asset.GetName(), arch) {
+					rl.BinaryURL = asset.GetBrowserDownloadURL()
+					rl.BinaryName = asset.GetName()
+					rl.BinarySince = units.HumanDuration(time.Since(asset.GetCreatedAt().Time))
+					continue
+				}
+				if strings.HasSuffix(asset.GetName(), arch+".sha256") {
+					c, err := getURLContent(asset.GetBrowserDownloadURL())
+					if err != nil {
+						return nil, err
+					}
+					rl.BinarySHA256 = c
+					continue
+				}
+				if strings.HasSuffix(asset.GetName(), arch+".md5") {
+					c, err := getURLContent(asset.GetBrowserDownloadURL())
+					if err != nil {
+						return nil, err
+					}
+					rl.BinaryMD5 = c
+					continue
+				}
 			}
-			rl.BinarySHA256 = c
-			continue
-		}
-		if strings.HasSuffix(asset.GetName(), arch+".md5") {
-			c, err := getURLContent(asset.GetBrowserDownloadURL())
-			if err != nil {
-				return nil, err
+		} else {
+			for _, asset := range r.Assets {
+				rl.BinaryDownloadCount += asset.GetDownloadCount()
 			}
-			rl.BinaryMD5 = c
-			continue
 		}
 	}
 
