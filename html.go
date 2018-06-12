@@ -79,15 +79,17 @@ const (
 	<body>
 		<div class="container">
 			<h1>Latest Releases</h1>
+			<p>This only shows the hases and download links for linux amd64. For other archs click the tag
+			to view the release page.</p>
 
 			<table>
 				<thead>
 					<tr>
 						<th>Project</th>
 						<th>Release</th>
-						<th>download <small>(for other archs click the tag)</small></th>
-						<th>linux amd64 sha256</th>
-						<th>linux amd64 md5</th>
+						<th>download</th>
+						<th>sha256</th>
+						<th>md5</th>
 						<th>download count</th>
 					</tr>
 				</thead>

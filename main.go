@@ -336,7 +336,7 @@ func getURLContent(uri string) (string, error) {
 		return "", err
 	}
 
-	return strings.TrimRight(string(b), " "), nil
+	return strings.Split(string(b), " ")[0], nil
 }
 
 func in(a stringSlice, s string) bool {
