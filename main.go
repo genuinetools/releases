@@ -44,7 +44,6 @@ var (
 	enturl string
 	orgs   stringSlice
 	nouser bool
-	dryrun bool
 
 	debug bool
 	vrsn  bool
@@ -72,7 +71,6 @@ func init() {
 	flag.StringVar(&enturl, "url", "", "GitHub Enterprise URL")
 	flag.Var(&orgs, "orgs", "organizations to include")
 	flag.BoolVar(&nouser, "nouser", false, "do not include your user")
-	flag.BoolVar(&dryrun, "dry-run", false, "do not change branch settings just print the changes that would occur")
 
 	flag.BoolVar(&vrsn, "version", false, "print version and exit")
 	flag.BoolVar(&vrsn, "v", false, "print version and exit (shorthand)")
@@ -169,34 +167,15 @@ func main() {
 		b bytes.Buffer
 	)
 
+	// Fetch new data and render the template every interval sequence.
+	b, err = run(ctx, client, affiliation)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	go func() {
-		// Fetch new data and render the template every interval sequence.
 		for range ticker.C {
-			var (
-				page     = 1
-				perPage  = 100
-				releases = []release{}
-				err      error
-			)
-
-			logrus.Info("Getting repositories...")
-			releases, err = getRepositories(ctx, client, page, perPage, affiliation, releases)
+			b, err = run(ctx, client, affiliation)
 			if err != nil {
-				if v, ok := err.(*github.RateLimitError); ok {
-					logrus.Fatalf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
-				}
-
-				logrus.Fatal(err)
-			}
-
-			// Parse the template.
-			logrus.Info("Executing template...")
-			t := template.Must(template.New("").Parse(tmpl))
-			b.Reset()
-			w := io.Writer(&b)
-
-			// Execute the template.
-			if err := t.Execute(w, releases); err != nil {
 				logrus.Fatal(err)
 			}
 		}
@@ -212,12 +191,41 @@ func main() {
 	})
 
 	logrus.Infof("Starting server on port %d...", port)
-	logrus.Fatal(http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), mux))
+	logrus.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
 }
 
 type release struct {
 	Repository *github.Repository
 	Release    *github.RepositoryRelease
+}
+
+func run(ctx context.Context, client *github.Client, affiliation string) (bytes.Buffer, error) {
+	var (
+		page     = 1
+		perPage  = 100
+		releases = []release{}
+		b        bytes.Buffer
+		err      error
+	)
+
+	logrus.Info("Getting repositories...")
+	releases, err = getRepositories(ctx, client, page, perPage, affiliation, releases)
+	if err != nil {
+		if v, ok := err.(*github.RateLimitError); ok {
+			return b, fmt.Errorf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
+		}
+
+		return b, err
+	}
+
+	// Parse the template.
+	logrus.Info("Executing template...")
+	t := template.Must(template.New("").Parse(tmpl))
+	w := io.Writer(&b)
+
+	// Execute the template.
+	err = t.Execute(w, releases)
+	return b, err
 }
 
 func getRepositories(ctx context.Context, client *github.Client, page, perPage int, affiliation string, releases []release) ([]release, error) {

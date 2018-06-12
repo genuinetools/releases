@@ -6,28 +6,98 @@ const (
 	<head>
 		<meta charset="utf-8">
 		<title>GitHub Releases</title>
+		<style>
+			html {
+				display: block;
+			}
+			body{
+				font-family: Consolas, Inconsolata, monospace;
+				display: block;
+				margin: 0;
+				font-size: 1rem;
+				font-weight: 400;
+				line-height: 1.5;
+				color: #212529;
+				text-align: left;
+				background-color: #fff;
+			}
+			@media (min-width: 1200px) .container {
+				max-width: 1140px;
+			}
+			@media (min-width: 992px) .container {
+				max-width: 960px;
+			}
+			@media (min-width: 768px) .container {
+				max-width: 720px;
+			}
+			@media (min-width: 576px) .container {
+				max-width: 540px;
+			}
+			.container {
+				width: 100%;
+				padding-right: 15px;
+				padding-left: 15px;
+				margin-right: auto;
+				margin-left: auto;
+			}
+			table {
+				background-color: transparent;
+				border-color: transparent;
+				border-collapse: collapse;
+				border-spacing: 2px;
+				border-color: grey;
+				text-align: inherit;
+			}
+			thead {
+				display: table-header-group;
+				vertical-align: middle;
+				border-color: inherit;
+			}
+			tr {
+				display: table-row;
+				vertical-align: inherit;
+				border-color: inherit;
+			}
+			thead th {
+				vertical-align: bottom;
+				border-bottom: 2px solid #dee2e6;
+			}
+			td, th {
+				padding: .75rem;
+				vertical-align: top;
+				border-top: 1px solid #dee2e6;
+				display: table-cell;
+			}
+			tbody {
+				display: table-row-group;
+				vertical-align: middle;
+				border-color: inherit;
+			}
+		</style>
 	</head>
 	<body>
-		<h1>Latest Releases<h1>
+		<div class="container">
+			<h1>Latest Releases</h1>
 
-		<table>
-			<thead>
-				<tr>
-					<th>Project</th>
-					<th>Release</th>
-					<th>Link</th>
-				</tr>
-			</thead>
-			<tbody>
-			{{range .}}
-				<tr>
-					<td>{{.Repository.FullName}}</td>
-					<td>{{.Release.TagName}}</td>
-					<td>{{.Release.HTMLURL}}</td>
-				</tr>
-			{{end}}
-			</tbody>
-		</table>
+			<table>
+				<thead>
+					<tr>
+						<th>Project</th>
+						<th>Release</th>
+						<th>Link</th>
+					</tr>
+				</thead>
+				<tbody>
+				{{range .}}
+					<tr>
+						<td>{{.Repository.FullName}}</td>
+						<td>{{.Release.TagName}}</td>
+						<td><a href="{{.Release.HTMLURL}}" target="_blank">{{.Repository.FullName}}/releases</a></td>
+					</tr>
+				{{end}}
+				</tbody>
+			</table>
+		</div>
 
 		<script>
 		(function () {
