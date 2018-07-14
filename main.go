@@ -41,7 +41,7 @@ const (
 
 var (
 	port     int
-	interval string
+	interval time.Duration
 
 	token  string
 	enturl string
@@ -68,7 +68,7 @@ func init() {
 	// parse flags
 	flag.IntVar(&port, "port", 8080, "port for the server to listen on")
 	flag.IntVar(&port, "p", 8080, "port for the server to listen on (shorthand)")
-	flag.StringVar(&interval, "interval", "1h", "interval on which to refetch release data")
+	flag.DurationVar(&interval, "interval", time.Hour, "interval on which to refetch release data")
 
 	flag.StringVar(&token, "token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
 	flag.StringVar(&enturl, "url", "", "GitHub Enterprise URL")
@@ -106,7 +106,7 @@ func init() {
 }
 
 func main() {
-	var ticker *time.Ticker
+	ticker := time.NewTicker(interval)
 
 	// On ^C, or SIGTERM handle exit.
 	signals := make(chan os.Signal, 0)
@@ -159,15 +159,9 @@ func main() {
 		orgs = append(orgs, username)
 	}
 
-	// Parse the interval duration.
-	dur, err := time.ParseDuration(interval)
-	if err != nil {
-		logrus.Fatalf("parsing %s as duration failed: %v", interval, err)
-	}
-	ticker = time.NewTicker(dur)
-
 	var (
-		b bytes.Buffer
+		b   bytes.Buffer
+		err error
 	)
 
 	// Fetch new data and render the template every interval sequence.

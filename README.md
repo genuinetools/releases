@@ -42,11 +42,11 @@ $ releases -h
 
  Server to show latest GitHub Releases for a set of repositories.
  Version: v0.0.4
- Build: 488407e
+ Build: 442907b
 
   -d    run in debug mode
-  -interval string
-        interval on which to refetch release data (default "1h")
+  -interval duration
+        interval on which to refetch release data (default 1h0m0s)
   -nouser
         do not include your user
   -orgs value
