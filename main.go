@@ -433,7 +433,10 @@ func updateRelease(ctx context.Context, client *github.Client, repo *github.Repo
 
 	// Send the new body to GitHub to update the release.
 	logrus.Debugf("Updating release for %s -> %s...", repo.GetFullName(), r.GetTagName())
-	_, _, err := client.Repositories.EditRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName(), r.GetID(), r)
+	_, resp, err := client.Repositories.EditRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName(), r.GetID(), r)
+	if resp.StatusCode == http.StatusForbidden {
+		return nil
+	}
 	return err
 }
 
