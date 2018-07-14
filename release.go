@@ -4,10 +4,10 @@ const (
 	releaseTmpl = `Below are easy install instructions by OS and Architecture. As always there are always the standard instructions in the [README.md](README.md) as well.
 
 << range $os, $v := . >>
-## << $os  >>
+#### << $os  >>
 
 << range $arch, $r := $v >>
-### << $arch >>
+##### << $arch >>
 
 ` + "```" + `console
 # Export the sha256sum for verification.
