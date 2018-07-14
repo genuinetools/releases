@@ -8,11 +8,11 @@ Server to show latest GitHub Releases for a set of repositories.
 
 #### Binaries
 
-- **darwin** [386](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-darwin-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-darwin-amd64)
-- **freebsd** [386](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-freebsd-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-freebsd-amd64)
-- **linux** [386](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-linux-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-linux-amd64) / [arm](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-linux-arm) / [arm64](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-linux-arm64)
-- **solaris** [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-solaris-amd64)
-- **windows** [386](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-windows-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.3/releases-windows-amd64)
+- **darwin** [386](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-darwin-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-darwin-amd64)
+- **freebsd** [386](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-freebsd-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-freebsd-amd64)
+- **linux** [386](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-linux-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-linux-amd64) / [arm](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-linux-arm) / [arm64](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-linux-arm64)
+- **solaris** [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-solaris-amd64)
+- **windows** [386](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-windows-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.4/releases-windows-amd64)
 
 #### Via Go
 
@@ -41,7 +41,7 @@ $ releases -h
 |_|  \___|_|\___|\__,_|___/\___||___/
 
  Server to show latest GitHub Releases for a set of repositories.
- Version: v0.0.3
+ Version: v0.0.4
  Build: 488407e
 
   -d    run in debug mode
