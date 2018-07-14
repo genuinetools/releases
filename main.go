@@ -251,6 +251,11 @@ func getRepositories(ctx context.Context, client *github.Client, page, perPage i
 	}
 
 	for _, repo := range repos {
+		// Skip it if it's archived.
+		if repo.GetArchived() {
+			continue
+		}
+
 		logrus.Debugf("Handling repo %s...", *repo.FullName)
 		r, err := handleRepo(ctx, client, repo)
 		if err != nil {
