@@ -7,7 +7,7 @@ const (
 #### << $os  >>
 
 << range $arch, $r := $v >>
-##### << $arch >>
+##### << $arch >> - << $os >>
 
 ` + "```" + `console
 # Export the sha256sum for verification.
