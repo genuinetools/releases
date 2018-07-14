@@ -48,6 +48,8 @@ var (
 	orgs   stringSlice
 	nouser bool
 
+	updateReleaseBody bool
+
 	debug bool
 	vrsn  bool
 )
@@ -74,6 +76,8 @@ func init() {
 	flag.StringVar(&enturl, "url", "", "GitHub Enterprise URL")
 	flag.Var(&orgs, "orgs", "organizations to include")
 	flag.BoolVar(&nouser, "nouser", false, "do not include your user")
+
+	flag.BoolVar(&updateReleaseBody, "update-release-body", false, "update the body message for the release as well")
 
 	flag.BoolVar(&vrsn, "version", false, "print version and exit")
 	flag.BoolVar(&vrsn, "v", false, "print version and exit (shorthand)")
@@ -293,47 +297,144 @@ func handleRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 	rl := release{
 		Repository: repo,
 	}
-	// Get information about the binary assets for linux-amd64
+	// Get information about the binary assets.
 	arch := "linux-amd64"
 	for i := 0; i < len(releases); i++ {
 		r := releases[i]
+
+		isLatest := false
 		if rl.Release == nil && !r.GetDraft() {
 			// If this is the latest release and it's not a draft make it the one
 			// to return
 			rl.Release = r
-			for _, asset := range r.Assets {
-				rl.BinaryDownloadCount += asset.GetDownloadCount()
-				if strings.HasSuffix(asset.GetName(), arch) {
-					rl.BinaryURL = asset.GetBrowserDownloadURL()
-					rl.BinaryName = asset.GetName()
-					rl.BinarySince = units.HumanDuration(time.Since(asset.GetCreatedAt().Time))
-					continue
-				}
-				if strings.HasSuffix(asset.GetName(), arch+".sha256") {
-					c, err := getURLContent(asset.GetBrowserDownloadURL())
-					if err != nil {
-						return nil, err
+			isLatest = true
+		}
+
+		// This holds data like os -> arch -> release and we will use it for rendering our
+		// release body template.
+		allReleases := map[string]map[string]release{}
+
+		// Iterate over the assets.
+		for _, asset := range r.Assets {
+			rl.BinaryDownloadCount += asset.GetDownloadCount()
+
+			if !strings.Contains(asset.GetName(), ".") {
+				// We know we are on a binary and not a hashsum.
+				suffix := strings.SplitN(strings.TrimPrefix(asset.GetName(), repo.GetName()+"-"), "-", 2)
+				if len(suffix) == 2 {
+					// Add this to our overall releases map.
+					osn := suffix[0]
+					arch := suffix[1]
+
+					// Prefill the map to avoid a panic.
+					if _, ok := allReleases[osn]; !ok {
+						allReleases[osn] = map[string]release{}
 					}
-					rl.BinarySHA256 = c
-					continue
-				}
-				if strings.HasSuffix(asset.GetName(), arch+".md5") {
-					c, err := getURLContent(asset.GetBrowserDownloadURL())
-					if err != nil {
-						return nil, err
+
+					tr, ok := allReleases[osn][arch]
+					if !ok {
+						allReleases[osn][arch] = release{
+							BinaryURL:  asset.GetBrowserDownloadURL(),
+							BinaryName: asset.GetName(),
+							Repository: repo,
+						}
+					} else {
+						tr.BinaryURL = asset.GetBrowserDownloadURL()
+						tr.BinaryName = asset.GetName()
+						allReleases[osn][arch] = tr
 					}
-					rl.BinaryMD5 = c
-					continue
 				}
 			}
-		} else {
-			for _, asset := range r.Assets {
-				rl.BinaryDownloadCount += asset.GetDownloadCount()
+
+			if strings.HasSuffix(asset.GetName(), ".sha256") {
+				// We know we are on a sha256sum.
+				suffix := strings.SplitN(strings.TrimSuffix(strings.TrimPrefix(asset.GetName(), repo.GetName()+"-"), ".sha256"), "-", 2)
+				if len(suffix) == 2 {
+					// Add this to our overall releases map.
+					osn := suffix[0]
+					arch := suffix[1]
+
+					c, err := getURLContent(asset.GetBrowserDownloadURL())
+					if err != nil {
+						return nil, err
+					}
+
+					// Prefill the map to avoid a panic.
+					if _, ok := allReleases[osn]; !ok {
+						allReleases[osn] = map[string]release{}
+					}
+
+					tr, ok := allReleases[osn][arch]
+					if !ok {
+						allReleases[osn][arch] = release{
+							BinarySHA256: c,
+							Repository:   repo,
+						}
+					} else {
+						tr.BinarySHA256 = c
+						allReleases[osn][arch] = tr
+					}
+				}
+			}
+
+			if isLatest && strings.HasSuffix(asset.GetName(), arch) {
+				rl.BinaryURL = asset.GetBrowserDownloadURL()
+				rl.BinaryName = asset.GetName()
+				rl.BinarySince = units.HumanDuration(time.Since(asset.GetCreatedAt().Time))
+			}
+
+			if isLatest && strings.HasSuffix(asset.GetName(), arch+".sha256") {
+				c, err := getURLContent(asset.GetBrowserDownloadURL())
+				if err != nil {
+					return nil, err
+				}
+				rl.BinarySHA256 = c
+			}
+
+			if isLatest && strings.HasSuffix(asset.GetName(), arch+".md5") {
+				c, err := getURLContent(asset.GetBrowserDownloadURL())
+				if err != nil {
+					return nil, err
+				}
+				rl.BinaryMD5 = c
+			}
+		}
+
+		if updateReleaseBody {
+			if err := updateRelease(ctx, client, repo, r, allReleases); err != nil {
+				return nil, err
 			}
 		}
 	}
 
 	return &rl, nil
+}
+
+func updateRelease(ctx context.Context, client *github.Client, repo *github.Repository, r *github.RepositoryRelease, releases map[string]map[string]release) error {
+	var (
+		b bytes.Buffer
+	)
+
+	// Parse the template.
+	funcMap := template.FuncMap{
+		"ToUpper": strings.ToUpper,
+	}
+	t := template.Must(template.New("").Funcs(funcMap).Delims("<<", ">>").Parse(releaseTmpl))
+	w := io.Writer(&b)
+
+	// Execute the template.
+	if err := t.Execute(w, releases); err != nil {
+		return err
+	}
+
+	s := b.String()
+	r.Body = &s
+	r.Name = r.TagName
+
+	// Send the new body to GitHub to update the release.
+	logrus.Debugf("Updating release for %s -> %s...", repo.GetFullName(), r.GetTagName())
+	_, _, err := client.Repositories.EditRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName(), r.GetID(), r)
+	return err
 }
 
 func getURLContent(uri string) (string, error) {
