@@ -19,24 +19,10 @@ import (
 	"golang.org/x/oauth2"
 
 	units "github.com/docker/go-units"
+	"github.com/genuinetools/pkg/cli"
 	"github.com/genuinetools/releases/version"
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	// BANNER is what is printed for help/info output.
-	BANNER = `          _
- _ __ ___| | ___  __ _ ___  ___  ___
-| '__/ _ \ |/ _ \/ _` + "`" + ` / __|/ _ \/ __|
-| | |  __/ |  __/ (_| \__ \  __/\__ \
-|_|  \___|_|\___|\__,_|___/\___||___/
-
- Server to show latest GitHub Releases for a set of repositories.
- Version: %s
- Build: %s
-
-`
 )
 
 var (
@@ -51,7 +37,6 @@ var (
 	updateReleaseBody bool
 
 	debug bool
-	vrsn  bool
 )
 
 // stringSlice is a slice of strings
@@ -66,135 +51,142 @@ func (s *stringSlice) Set(value string) error {
 	return nil
 }
 
-func init() {
-	// parse flags
-	flag.IntVar(&port, "port", 8080, "port for the server to listen on")
-	flag.IntVar(&port, "p", 8080, "port for the server to listen on (shorthand)")
-	flag.DurationVar(&interval, "interval", time.Hour, "interval on which to refetch release data")
-
-	flag.StringVar(&token, "token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
-	flag.StringVar(&enturl, "url", "", "GitHub Enterprise URL")
-	flag.Var(&orgs, "orgs", "organizations to include")
-	flag.BoolVar(&nouser, "nouser", false, "do not include your user")
-
-	flag.BoolVar(&updateReleaseBody, "update-release-body", false, "update the body message for the release as well")
-
-	flag.BoolVar(&vrsn, "version", false, "print version and exit")
-	flag.BoolVar(&vrsn, "v", false, "print version and exit (shorthand)")
-	flag.BoolVar(&debug, "d", false, "run in debug mode")
-
-	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, fmt.Sprintf(BANNER, version.VERSION, version.GITCOMMIT))
-		flag.PrintDefaults()
-	}
-
-	flag.Parse()
-
-	if vrsn {
-		fmt.Printf("releases version %s, build %s", version.VERSION, version.GITCOMMIT)
-		os.Exit(0)
-	}
-
-	// set log level
-	if debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
-
-	if token == "" {
-		usageAndExit("GitHub token cannot be empty.", 1)
-	}
-
-	if nouser && orgs == nil {
-		usageAndExit("no organizations provided", 1)
-	}
-}
-
 func main() {
-	ticker := time.NewTicker(interval)
+	// Create a new cli program.
+	p := cli.NewProgram()
+	p.Name = "releases"
+	p.Description = "Server to show latest GitHub Releases for a set of repositories"
 
-	// On ^C, or SIGTERM handle exit.
-	signals := make(chan os.Signal, 0)
-	signal.Notify(signals, os.Interrupt)
-	signal.Notify(signals, syscall.SIGTERM)
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		for sig := range signals {
-			cancel()
-			ticker.Stop()
-			logrus.Infof("Received %s, exiting.", sig.String())
-			os.Exit(0)
+	// Set the GitCommit and Version.
+	p.GitCommit = version.GITCOMMIT
+	p.Version = version.VERSION
+
+	// Setup the global flags.
+	p.FlagSet = flag.NewFlagSet("global", flag.ExitOnError)
+	p.FlagSet.IntVar(&port, "port", 8080, "port for the server to listen on")
+	p.FlagSet.IntVar(&port, "p", 8080, "port for the server to listen on")
+	p.FlagSet.DurationVar(&interval, "interval", time.Hour, "interval on which to refetch release data")
+
+	p.FlagSet.StringVar(&token, "token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
+	p.FlagSet.StringVar(&enturl, "url", "", "GitHub Enterprise URL")
+	p.FlagSet.Var(&orgs, "orgs", "organizations to include")
+	p.FlagSet.BoolVar(&nouser, "nouser", false, "do not include your user")
+
+	p.FlagSet.BoolVar(&updateReleaseBody, "update-release-body", false, "update the body message for the release as well")
+
+	p.FlagSet.BoolVar(&debug, "d", false, "enable debug logging")
+
+	// Set the before function.
+	p.Before = func(ctx context.Context) error {
+		// Set the log level.
+		if debug {
+			logrus.SetLevel(logrus.DebugLevel)
 		}
-	}()
 
-	// Create the http client.
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-
-	// Create the github client.
-	client := github.NewClient(tc)
-	if enturl != "" {
-		var err error
-		client.BaseURL, err = url.Parse(enturl + "/api/v3/")
-		if err != nil {
-			logrus.Fatal(err)
+		if len(token) < 1 {
+			return fmt.Errorf("GitHub token cannot be empty")
 		}
+
+		if nouser && orgs == nil {
+			return fmt.Errorf("no organizations provided")
+		}
+		return nil
 	}
 
-	// Affiliation must be set before we add the user to the "orgs".
-	affiliation := "owner,collaborator"
-	if len(orgs) > 0 {
-		affiliation += ",organization_member"
-	}
+	// Set the main program action.
+	p.Action = func(ctx context.Context, args []string) error {
+		ticker := time.NewTicker(interval)
 
-	if !nouser {
-		// Get the current user
-		user, _, err := client.Users.Get(ctx, "")
-		if err != nil {
-			if v, ok := err.(*github.RateLimitError); ok {
-				logrus.Fatalf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
+		// On ^C, or SIGTERM handle exit.
+		signals := make(chan os.Signal, 0)
+		signal.Notify(signals, os.Interrupt)
+		signal.Notify(signals, syscall.SIGTERM)
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
+		go func() {
+			for sig := range signals {
+				cancel()
+				ticker.Stop()
+				logrus.Infof("Received %s, exiting.", sig.String())
+				os.Exit(0)
 			}
+		}()
 
-			logrus.Fatal(err)
-		}
-		username := *user.Login
-		// add the current user to orgs
-		orgs = append(orgs, username)
-	}
+		// Create the http client.
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		)
+		tc := oauth2.NewClient(ctx, ts)
 
-	var (
-		b   bytes.Buffer
-		err error
-	)
-
-	// Fetch new data and render the template every interval sequence.
-	b, err = run(ctx, client, affiliation)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	go func() {
-		for range ticker.C {
-			bt, err := run(ctx, client, affiliation)
+		// Create the github client.
+		client := github.NewClient(tc)
+		if enturl != "" {
+			var err error
+			client.BaseURL, err = url.Parse(enturl + "/api/v3/")
 			if err != nil {
-				logrus.Warn(err)
-			} else {
-				b = bt
+				logrus.Fatal(err)
 			}
 		}
-	}()
 
-	// Setup the server.
-	mux := http.NewServeMux()
+		// Affiliation must be set before we add the user to the "orgs".
+		affiliation := "owner,collaborator"
+		if len(orgs) > 0 {
+			affiliation += ",organization_member"
+		}
 
-	// Define wildcard/root handler.
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, b.String())
-	})
+		if !nouser {
+			// Get the current user
+			user, _, err := client.Users.Get(ctx, "")
+			if err != nil {
+				if v, ok := err.(*github.RateLimitError); ok {
+					logrus.Fatalf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
+				}
 
-	logrus.Infof("Starting server on port %d...", port)
-	logrus.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
+				logrus.Fatal(err)
+			}
+			username := *user.Login
+			// add the current user to orgs
+			orgs = append(orgs, username)
+		}
+
+		var (
+			b   bytes.Buffer
+			err error
+		)
+
+		// Fetch new data and render the template every interval sequence.
+		b, err = run(ctx, client, affiliation)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		go func() {
+			for range ticker.C {
+				bt, err := run(ctx, client, affiliation)
+				if err != nil {
+					logrus.Warn(err)
+				} else {
+					b = bt
+				}
+			}
+		}()
+
+		// Setup the server.
+		mux := http.NewServeMux()
+
+		// Define wildcard/root handler.
+		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			fmt.Fprint(w, b.String())
+		})
+
+		logrus.Infof("Starting server on port %d...", port)
+		logrus.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
+
+		return nil
+	}
+
+	// Run our program.
+	p.Run()
 }
 
 type release struct {
@@ -467,14 +459,4 @@ func in(a stringSlice, s string) bool {
 		}
 	}
 	return false
-}
-
-func usageAndExit(message string, exitCode int) {
-	if message != "" {
-		fmt.Fprintf(os.Stderr, message)
-		fmt.Fprintf(os.Stderr, "\n\n")
-	}
-	flag.Usage()
-	fmt.Fprintf(os.Stderr, "\n")
-	os.Exit(exitCode)
 }

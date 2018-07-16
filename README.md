@@ -38,32 +38,22 @@ $ docker run -d --restart always \
 
 ```console
 $ releases -h
-          _
- _ __ ___| | ___  __ _ ___  ___  ___
-| '__/ _ \ |/ _ \/ _` / __|/ _ \/ __|
-| | |  __/ |  __/ (_| \__ \  __/\__ \
-|_|  \___|_|\___|\__,_|___/\___||___/
+releases -  Server to show latest GitHub Releases for a set of repositories.
 
- Server to show latest GitHub Releases for a set of repositories.
- Version: v0.0.5
- Build: 442907b
+Usage: releases <command>
 
-  -d    run in debug mode
-  -interval duration
-        interval on which to refetch release data (default 1h0m0s)
-  -nouser
-        do not include your user
-  -orgs value
-        organizations to include
-  -p int
-        port for the server to listen on (shorthand) (default 8080)
-  -port int
-        port for the server to listen on (default 8080)
-  -token string
-        GitHub API token (or env var GITHUB_TOKEN)
-  -url string
-        GitHub Enterprise URL
-  -v    print version and exit (shorthand)
-  -version
-        print version and exit
+Flags:
+
+  --token                GitHub API token (or env var GITHUB_TOKEN)
+  --update-release-body  update the body message for the release as well (default: false)
+  --url                  GitHub Enterprise URL (default: <none>)
+  -d                     enable debug logging (default: false)
+  --interval             interval on which to refetch release data (default: 1h0m0s)
+  --nouser               do not include your user (default: false)
+  --orgs                 organizations to include (default: [])
+  -p, --port             port for the server to listen on (default: 8080)
+
+Commands:
+
+  version  Show the version information.
 ```
