@@ -18,39 +18,39 @@ jobs:
       deploy:
         provider: releases
         file:
-          - cross/releases-linux-amd64.md5
-          - cross/releases-windows-386.sha256
-          - cross/releases-linux-arm
-          - cross/releases-darwin-amd64.md5
           - cross/releases-darwin-amd64
-          - cross/releases-solaris-amd64.md5
-          - cross/releases-linux-arm64.sha256
-          - cross/releases-linux-arm.sha256
-          - cross/releases-linux-386.sha256
+          - cross/releases-darwin-amd64.md5
+          - cross/releases-darwin-amd64.sha256
+          - cross/releases-darwin-386
           - cross/releases-darwin-386.md5
-          - cross/releases-windows-386.md5
+          - cross/releases-darwin-386.sha256
+          - cross/releases-freebsd-amd64
           - cross/releases-freebsd-amd64.md5
-          - cross/releases-linux-arm64.md5
-          - cross/releases-linux-arm64
           - cross/releases-freebsd-amd64.sha256
-          - cross/releases-freebsd-386.md5
-          - cross/releases-linux-amd64.sha256
-          - cross/releases-linux-386.md5
           - cross/releases-freebsd-386
+          - cross/releases-freebsd-386.md5
+          - cross/releases-freebsd-386.sha256
+          - cross/releases-linux-arm
+          - cross/releases-linux-arm.md5
+          - cross/releases-linux-arm.sha256
+          - cross/releases-linux-arm64
+          - cross/releases-linux-arm64.md5
+          - cross/releases-linux-arm64.sha256
+          - cross/releases-linux-amd64
+          - cross/releases-linux-amd64.md5
+          - cross/releases-linux-amd64.sha256
+          - cross/releases-linux-386
+          - cross/releases-linux-386.md5
+          - cross/releases-linux-386.sha256
+          - cross/releases-solaris-amd64
+          - cross/releases-solaris-amd64.md5
           - cross/releases-solaris-amd64.sha256
           - cross/releases-windows-amd64
           - cross/releases-windows-amd64.md5
           - cross/releases-windows-amd64.sha256
-          - cross/releases-linux-arm.md5
-          - cross/releases-darwin-386.sha256
-          - cross/releases-darwin-amd64.sha256
           - cross/releases-windows-386
-          - cross/releases-solaris-amd64
-          - cross/releases-darwin-386
-          - cross/releases-linux-386
-          - cross/releases-freebsd-amd64
-          - cross/releases-freebsd-386.sha256
-          - cross/releases-linux-amd64
+          - cross/releases-windows-386.md5
+          - cross/releases-windows-386.sha256
         skip_cleanup: true
         on:
           tags: true

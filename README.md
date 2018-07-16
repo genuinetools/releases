@@ -1,22 +1,26 @@
 # releases
 
-[![Travis CI](https://travis-ci.org/genuinetools/releases.svg?branch=master)](https://travis-ci.org/genuinetools/releases)
+[![Travis CI](https://img.shields.io/travis/genuinetools/releases.svg?style=for-the-badge)](https://travis-ci.org/genuinetools/releases)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/genuinetools/releases)
+[![Github All Releases](https://img.shields.io/github/downloads/genuinetools/releases/total.svg?style=for-the-badge)](https://github.com/genuinetools/releases/releases)
 
 Server to show latest GitHub Releases for a set of repositories.
+
+ * [Installation](README.md#installation)
+      * [Binaries](README.md#binaries)
+      * [Via Go](README.md#via-go)
+      * [Running with Docker](README.md#running-with-docker)
+ * [Usage](README.md#usage)
 
 ## Installation
 
 #### Binaries
 
-- **darwin** [386](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-darwin-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-darwin-amd64)
-- **freebsd** [386](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-freebsd-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-freebsd-amd64)
-- **linux** [386](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-linux-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-linux-amd64) / [arm](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-linux-arm) / [arm64](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-linux-arm64)
-- **solaris** [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-solaris-amd64)
-- **windows** [386](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-windows-386) / [amd64](https://github.com/genuinetools/releases/releases/download/v0.0.5/releases-windows-amd64)
+For installation instructions from binaries please visit the [Releases Page](https://github.com/genuinetools/releases/releases).
 
 #### Via Go
 
-```bash
+```console
 $ go get github.com/genuinetools/releases
 ```
 
