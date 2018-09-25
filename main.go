@@ -232,6 +232,7 @@ func run(ctx context.Context, client *github.Client, affiliation string) (bytes.
 
 func getRepositories(ctx context.Context, client *github.Client, page, perPage int, affiliation string, releases []release) ([]release, error) {
 	opt := &github.RepositoryListOptions{
+		Visibility:  "public",
 		Affiliation: affiliation,
 		ListOptions: github.ListOptions{
 			Page:    page,
