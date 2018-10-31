@@ -214,7 +214,8 @@ func run(ctx context.Context, client *github.Client, affiliation string) (bytes.
 	releases, err = getRepositories(ctx, client, page, perPage, affiliation, releases)
 	if err != nil {
 		if v, ok := err.(*github.RateLimitError); ok {
-			return b, fmt.Errorf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
+			logrus.Warnf("%s Limit: %d; Remaining: %d; Retry After: %s", v.Message, v.Rate.Limit, v.Rate.Remaining, time.Until(v.Rate.Reset.Time).String())
+			return b, nil
 		}
 
 		return b, err
