@@ -158,7 +158,7 @@ func main() {
 		// Fetch new data and render the template every interval sequence.
 		b, err = run(ctx, client, affiliation)
 		if err != nil {
-			logrus.Fatal(err)
+			logrus.Warn(err)
 		}
 		go func() {
 			for range ticker.C {
@@ -401,9 +401,12 @@ func handleRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 		}
 
 		if updateReleaseBody {
-			if err := updateRelease(ctx, client, repo, r, allReleases); err != nil {
-				return nil, err
-			}
+			// Do this in a go routine we don't really care if it fails.
+			go func(repo *github.Repository, r *github.RepositoryRelease, releases map[string]map[string]release) {
+				if err := updateRelease(ctx, client, repo, r, releases); err != nil {
+					logrus.Warn(err)
+				}
+			}(repo, r, allReleases)
 		}
 	}
 
