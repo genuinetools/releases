@@ -242,6 +242,9 @@ func getRepositories(ctx context.Context, client *github.Client, page, perPage i
 	}
 	repos, resp, err := client.Repositories.List(ctx, "", opt)
 	if err != nil {
+		if strings.Contains(err.Error(), "502 Server Error") {
+			return releases, nil
+		}
 		return nil, err
 	}
 
