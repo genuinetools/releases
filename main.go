@@ -218,7 +218,7 @@ func run(ctx context.Context, client *github.Client, affiliation string) (bytes.
 			return b, nil
 		}
 
-		return b, err
+		logrus.Warnf("getting repositories failed: %v", err)
 	}
 
 	// Parse the template.
@@ -242,10 +242,7 @@ func getRepositories(ctx context.Context, client *github.Client, page, perPage i
 	}
 	repos, resp, err := client.Repositories.List(ctx, "", opt)
 	if err != nil {
-		if strings.Contains(err.Error(), "502 Server Error") {
-			return releases, nil
-		}
-		return nil, err
+		return releases, err
 	}
 
 	for _, repo := range repos {
@@ -257,7 +254,7 @@ func getRepositories(ctx context.Context, client *github.Client, page, perPage i
 		logrus.Debugf("Handling repo %s...", *repo.FullName)
 		r, err := handleRepo(ctx, client, repo)
 		if err != nil {
-			return nil, err
+			return releases, err
 		}
 		if r != nil {
 			releases = append(releases, *r)
