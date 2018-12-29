@@ -6,11 +6,9 @@
 
 Server to show latest GitHub Releases for a set of repositories.
 
- * [Installation](README.md#installation)
-      * [Binaries](README.md#binaries)
-      * [Via Go](README.md#via-go)
-      * [Running with Docker](README.md#running-with-docker)
- * [Usage](README.md#usage)
+<!-- toc -->
+
+<!-- tocstop -->
 
 ## Installation
 
