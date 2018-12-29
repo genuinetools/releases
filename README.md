@@ -8,6 +8,12 @@ Server to show latest GitHub Releases for a set of repositories.
 
 <!-- toc -->
 
+- [Installation](#installation)
+    + [Binaries](#binaries)
+    + [Via Go](#via-go)
+    + [Running with Docker](#running-with-docker)
+- [Usage](#usage)
+
 <!-- tocstop -->
 
 ## Installation
