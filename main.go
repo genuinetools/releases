@@ -99,7 +99,7 @@ func main() {
 		ticker := time.NewTicker(interval)
 
 		// On ^C, or SIGTERM handle exit.
-		signals := make(chan os.Signal, 0)
+		signals := make(chan os.Signal)
 		signal.Notify(signals, os.Interrupt)
 		signal.Notify(signals, syscall.SIGTERM)
 		var cancel context.CancelFunc
