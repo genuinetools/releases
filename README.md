@@ -1,20 +1,14 @@
 # releases
 
-[![Travis CI](https://img.shields.io/travis/genuinetools/releases.svg?style=for-the-badge)](https://travis-ci.org/genuinetools/releases)
+![make-all](https://github.com/genuinetools/releases/workflows/make%20all/badge.svg)
+![make-image](https://github.com/genuinetools/releases/workflows/make%20image/badge.svg)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/genuinetools/releases)
 [![Github All Releases](https://img.shields.io/github/downloads/genuinetools/releases/total.svg?style=for-the-badge)](https://github.com/genuinetools/releases/releases)
 
 Server to show latest GitHub Releases for a set of repositories.
 
-<!-- toc -->
-
-- [Installation](#installation)
-    + [Binaries](#binaries)
-    + [Via Go](#via-go)
-    + [Running with Docker](#running-with-docker)
-- [Usage](#usage)
-
-<!-- tocstop -->
+<!-- START doctoc -->
+<!-- END doctoc -->
 
 ## Installation
 
