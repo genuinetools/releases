@@ -23,6 +23,8 @@ import (
 	"github.com/genuinetools/pkg/cli"
 	"github.com/genuinetools/releases/version"
 	"github.com/google/go-github/github"
+	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache/diskcache"
 	"github.com/sirupsen/logrus"
 )
 
@@ -117,9 +119,19 @@ func main() {
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: token},
 		)
-		tc := oauth2.NewClient(ctx, ts)
+
+		// Create the HTTP cache.
+		cachePath := "/tmp/cache"
+		if err := os.MkdirAll(cachePath, 0777); err != nil {
+			logrus.Fatal(err)
+		}
+		cache := diskcache.New(cachePath)
+		tr := httpcache.NewTransport(cache)
+		c := &http.Client{Transport: tr}
+		context.WithValue(ctx, oauth2.HTTPClient, c)
 
 		// Create the github client.
+		tc := oauth2.NewClient(ctx, ts)
 		client := github.NewClient(tc)
 		if enturl != "" {
 			var err error
