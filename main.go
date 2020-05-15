@@ -443,6 +443,14 @@ func updateRelease(ctx context.Context, client *github.Client, repo *github.Repo
 	}
 
 	s := b.String()
+
+	// Check if the body already matches the body we need.
+	if r.Body == &s && r.Name == r.TagName {
+		// Return early here.
+		logrus.Debugf("Release is already updated for %s -> %s...", repo.GetFullName(), r.GetTagName())
+		return nil
+	}
+
 	r.Body = &s
 	r.Name = r.TagName
 
